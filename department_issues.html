@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Department Issues</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<style>
+    .paper-report-modal .modal-content {
+        background-color: #f8f8f8; /* 轻微的纸张颜色 */
+        border: 1px solid #e7e7e7; /* 边框颜色，模拟纸张边缘 */
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* 轻微的阴影，增加立体感 */
+        font-family: 'Times New Roman', Times, serif; /* 更改字体模拟打印效果 */
+        color: #333; /* 字体颜色，模拟墨水颜色 */
+    }
+
+    .paper-report-modal .modal-header, .paper-report-modal .modal-footer {
+        background-color: #f7f7f7; /* 与主体略有不同，模拟纸张的不同部分 */
+        border-bottom: 2px solid #dedede; /* 底部边框，模拟分隔线 */
+        border-top: 2px solid #dedede; /* 顶部边框，仅在modal-footer */
+    }
+
+    .paper-report-modal .form-control, .paper-report-modal .form-select {
+        background-color: #ffffff; /* 输入框和下拉框的背景色 */
+        border: 1px solid #ccc; /* 边框颜色，模拟纸张边缘 */
+        box-shadow: none; /* 移除阴影，使其看起来更扁平 */
+    }
+
+    .paper-report-modal textarea.form-control {
+        font-family: 'Courier New', Courier, monospace; /* 为文本区域使用打字机风格的字体 */
+        height: auto; /* 自动调整文本区域的高度 */
+    }
+
+    /* 模拟纸张的背景纹理 */
+    .paper-report-modal .modal-body {
+        background-image: url('./images/white-texture.jpg'); /* 使用纸张纹理图片 */
+        background-size: cover; /* 覆盖整个背景 */
+        padding: 20px; /* 增加内边距，模拟纸张的实际边距 */
+    }
+
+    /* 调整按钮样式，使其更符合纸质风格 */
+    .paper-report-modal .btn-primary {
+        background-color: #4a90e2; /* 按钮颜色 */
+        border: 0; /* 移除边框 */
+    }
+    .paper-report-modal .btn-secondary {
+        background-color: #6c757d; /* 次要按钮颜色 */
+    }
+
+
+</style>
+
+<body>
+
+<div class="container mt-5 my-4">
+    <h2>问题部门登记/Responsible Records</h2>
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="input-group input-group-sm mb-3">
+                <input type="date" class="form-control" id="searchDate" placeholder="按日期搜索">
+                <div class="input-group-append">
+                    <button id="searchByDateBtn" class="btn btn-primary">日期搜索</button>
+                </div>
+            </div>
+
+        </div>
+        <div class="col-md-6">
+            <div class="input-group input-group-sm mb-3">
+                <select class="form-select" id="searchDepartment">
+                    <option selected>选择部门</option>
+                    <option value="拆柜">拆柜</option>
+                    <option value="叉车">叉车</option>
+                    <option value="贴标">贴标</option>
+                </select>
+                <div class="input-group-append">
+                    <button id="searchByDepartmentBtn" class="btn btn-primary">部门搜索</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row my-4 align-items-center">
+        <div class="col">
+            <h3 class="mb-0">问题记录</h3>
+        </div>
+        <div class="col text-end">
+            <button class="btn btn-primary" id="createIssue" data-bs-toggle="modal" data-bs-target="#createIssueModal">创建问题</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <div id="issuesList" class="list-group">
+                <!-- 动态加载问题记录 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建问题模态框 -->
+<div class="modal fade paper-report-modal" id="createIssueModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel">创建问题</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="issueForm">
+                    <div class="mb-3">
+                        <label for="departmentSelect" class="form-label">部门/Department</label>
+                        <select class="form-select" id="departmentSelect" required>
+                            <option value="">选择部门/select a department</option>
+                            <option value="拆柜">拆柜/unload</option>
+                            <option value="叉车">叉车/forklift</option>
+                            <option value="贴标">贴标/sticker</option>
+                            <!-- 根据需要添加更多部门选项 -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="issueDescription" class="form-label">问题描述/Question Description</label>
+                        <textarea class="form-control" id="issueDescription" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">管理员签字/Manager Signature</label>
+                        <div class="signature-pad--body form-control">
+                            <canvas id="responsibleSignaturePad" width="400" height="200"></canvas>
+                        </div>
+                        <button id="clearResponsibleSignature" type="button">Clear</button>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">操作人签字/Operator Signature</label>
+                        <div class="signature-pad--body form-control">
+                            <canvas id="reporterSignaturePad" width="400" height="200"></canvas>
+                        </div>
+                        <button id="clearReporterSignature" type="button">Clear</button>
+                    </div>
+                    <div class="mb-3">
+                        <label for="issueDate" class="form-label">日期/Date</label>
+                        <input type="date" class="form-control" id="issueDate" required>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="submitIssueForm()">保存/Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 查看问题模态框 -->
+<div class="modal fade paper-report-modal" id="viewIssueModal" tabindex="-1" aria-labelledby="viewIssueModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewIssueModalLabel">问题详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 这里将填充问题的详情 -->
+                <p id="modalDepartment"></p>
+                <p id="modalIssueDescription"></p>
+                <p>负责人签名：<img id="modalResponsibleSignature" src="" alt="负责人签名" style="max-width: 100%;"></p>
+                <p>问题人签名：<img id="modalReporterSignature" src="" alt="问题人签名" style="max-width: 100%;"></p>
+                <p id="modalIssueDate"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script>
+
+    // 在全局作用域中声明变量
+    var responsibleSignaturePad;
+    var reporterSignaturePad;
+    //创建签名canvas和signature-pad
+    document.addEventListener("DOMContentLoaded", function() {
+        // 初始化负责人签名板
+        var responsibleSignaturePadCanvas = document.getElementById('responsibleSignaturePad');
+        responsibleSignaturePad = new SignaturePad(responsibleSignaturePadCanvas);
+
+        // 初始化问题人签名板
+        var reporterSignaturePadCanvas = document.getElementById('reporterSignaturePad');
+        reporterSignaturePad = new SignaturePad(reporterSignaturePadCanvas);
+
+
+        // 假设有按钮用于清除签名，为其添加事件监听器
+        document.getElementById('clearResponsibleSignature').addEventListener('click', function() {
+            clearSignaturePad(responsibleSignaturePad);
+        });
+
+        document.getElementById('clearReporterSignature').addEventListener('click', function() {
+            clearSignaturePad(reporterSignaturePad);
+        });
+    });
+
+    function clearSignaturePad(signaturePad) {
+        signaturePad.clear();
+    }
+    // 封装表单提交逻辑为submitIssueForm函数
+    function submitIssueForm() {
+        // 收集表单数据
+        var department = document.getElementById('departmentSelect').value;
+        var issueDescription = document.getElementById('issueDescription').value;
+        var issueDate = document.getElementById('issueDate').value;
+
+        // 获取签名数据
+        var responsibleSignatureData = responsibleSignaturePad.toDataURL(); // 负责人签名
+        var reporterSignatureData = reporterSignaturePad.toDataURL(); // 问题人签名
+
+        // 构造要发送的数据
+        var formData = new FormData();
+        formData.append('department', department);
+        formData.append('issue', issueDescription);
+        formData.append('responsible_signature', responsibleSignatureData);
+        formData.append('reporter_signature', reporterSignatureData);
+        formData.append('date', issueDate);
+
+        // 使用fetch发送AJAX请求
+        fetch('./issuesReport_api/create.php', { // 替换为你的PHP文件路径
+            method: 'POST',
+            body: formData,
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.text();
+            })
+            .then(data => {
+                console.log("Response: ", data);
+                // 这里可以添加一些表单提交成功后的操作，例如关闭模态框、清除表单、显示成功消息等
+                // 关闭模态框（假设模态框的ID是myModal）
+                // 关闭模态框
+                var issueModalElement = document.getElementById('createIssueModal');
+                var issueModalInstance = bootstrap.Modal.getInstance(issueModalElement);
+                if (issueModalInstance) {
+                    issueModalInstance.hide();
+                }
+                // 清除表单
+                document.getElementById('issueForm').reset();
+                loadAndDisplayIssues();
+                // 清除签名
+                clearSignaturePad(responsibleSignaturePad);
+                clearSignaturePad(reporterSignaturePad);
+
+
+
+            })
+            .catch(error => {
+                console.error('Form submit error', error);
+                // 这里可以添加一些表单提交失败后的操作，例如显示错误消息等
+            });
+    }
+
+    //返回select数据
+    function loadAndDisplayIssues(searchParams = {}) {
+
+        // 构建查询字符串
+        const queryParams = new URLSearchParams(searchParams).toString();
+        // const apiUrl = './issuesReport_api/search.php' + (queryParams ? `?${queryParams}` : ''); // 如果有查询参数，则附加到URL
+
+        const apiUrl = './issuesReport_api/search.php' +
+            (queryParams ? `?${queryParams}&_=${new Date().getTime()}` : `?_=${new Date().getTime()}`); // 添加时间戳作为查询参数
+
+        console.log(apiUrl);
+
+        fetch(apiUrl) // 确保路径与实际相符
+            .then(response => response.json())
+            .then(data => {
+                const table = document.createElement('table');
+                table.className = 'table table-striped'; // 添加 Bootstrap 表格样式
+                const thead = table.createTHead();
+                const tbody = table.createTBody();
+
+                // 创建表头
+                const rowHead = thead.insertRow();
+                const headers = ['问题内容', '责任人','时间', '操作'];
+                headers.forEach(headerText => {
+                    const header = document.createElement('th');
+                    header.textContent = headerText;
+                    rowHead.appendChild(header);
+                });
+
+                // 填充数据
+                data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.insertCell().textContent = item.issues;
+                    // 为图片路径创建一个新的单元格并填充
+                    const imgCell = row.insertCell();
+                    const img = document.createElement('img');
+                    const imgName = item.reporterSignature.split('/').pop();
+                    img.src = `./images/signature/${imgName}`; // 假设item.imagePath存储着图片的URL
+                    img.style.maxWidth = '100px'; // 设置图片最大宽度，确保它适合表格单元格
+                    img.style.height = 'auto'; // 高度自动调整以保持图片比例
+                    imgCell.appendChild(img); // 将图片添加到单元格中
+
+                    row.insertCell().textContent = item.date;
+                    const buttonCell = row.insertCell();
+                    const viewButton = document.createElement('button');
+                    viewButton.textContent = '查看';
+                    viewButton.className = 'btn btn-primary btn-sm';
+
+                    // 为查看按钮添加点击事件监听器
+                    viewButton.addEventListener('click', function() {
+                        // 填充模态框内容
+                        document.getElementById('modalDepartment').textContent = '部门：' + item.department;
+                        document.getElementById('modalIssueDescription').textContent = '问题描述：' + item.issues;
+                        document.getElementById('modalResponsibleSignature').src = `./images/signature/${item.managerSignature.split('/').pop()}`; // 从数据库获取的路径
+                        document.getElementById('modalReporterSignature').src = `./images/signature/${item.reporterSignature.split('/').pop()}`; // 从数据库获取的路径
+                        document.getElementById('modalIssueDate').textContent = '日期：' + item.date;
+
+                        // 显示模态框
+                        var viewIssueModal = new bootstrap.Modal(document.getElementById('viewIssueModal'), {});
+                        viewIssueModal.show();
+                    });
+                    // 可以在这里为按钮添加事件监听器，例如查看详情
+                    buttonCell.appendChild(viewButton);
+
+                    // 为删除按钮创建一个单元格并添加删除按钮
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = '删除';
+                    deleteButton.className = 'btn btn-danger btn-sm';
+
+                    // 为删除按钮添加点击事件监听器
+                    deleteButton.addEventListener('click', function() {
+                        const password = prompt('请输入删除密码:');
+                        if (password.trim() === 'woshigustysong') {
+                            // 执行AJAX请求来删除记录
+                            fetch(`./issuesReport_api/delete.php?id=${item.id}`, {
+                                method: 'GET',
+                            })
+                                .then(response => response.text())
+                                .then(data => {
+                                    alert(data); // 显示服务器响应的消息
+                                    // 可以在这里刷新页面或直接从表格中移除该行
+                                    // location.reload(); // 刷新页面
+                                    row.remove(); // 直接从表格中移除该行
+                                })
+                                .catch(error => console.error('Error:', error));
+                        }else {
+                            // 密码不正确，显示错误消息
+                            alert('密码错误，不能删除。');
+                        }
+                    });
+
+                    buttonCell.appendChild(deleteButton);
+
+                });
+
+                // 清除旧的表格（如果存在）并添加新表格到页面
+                const issuesListDiv = document.getElementById('issuesList');
+                issuesListDiv.innerHTML = ''; // 清空容器内容
+                issuesListDiv.appendChild(table);
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAndDisplayIssues(); // 页面加载完毕时调用
+    });
+
+    document.getElementById('searchByDateBtn').addEventListener('click', function() {
+        const searchDate = document.getElementById('searchDate').value;
+        loadAndDisplayIssues({ date: searchDate });
+    });
+
+    document.getElementById('searchByDepartmentBtn').addEventListener('click', function() {
+        const searchDepartment = document.getElementById('searchDepartment').value;
+        loadAndDisplayIssues({ department: searchDepartment });
+    });
+
+
+
+
+
+
+</script>
+</body>
+</html>
